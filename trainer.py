@@ -8,6 +8,7 @@ import torch.optim as optim
 from utils import epoch_time
 from model.optim import ScheduledAdam
 from model.transformer import Transformer
+from tqdm import tqdm
 
 random.seed(32)
 torch.manual_seed(32)
@@ -50,7 +51,7 @@ class Trainer:
             epoch_loss = 0
             start_time = time.time()
 
-            for batch in self.train_iter:
+            for i,batch in tqdm(enumerate(self.train_iter)):
                 # For each batch, first zero the gradients
                 self.optimizer.zero_grad()
                 source = batch.kor
@@ -105,6 +106,7 @@ class Trainer:
                 loss = self.criterion(output, target)
 
                 epoch_loss += loss.item()
+                
 
         return epoch_loss / len(self.valid_iter)
 
