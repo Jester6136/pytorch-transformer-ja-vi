@@ -6,7 +6,7 @@ import pandas as pd
 from pathlib import Path
 from utils import convert_to_dataset
 
-from torchtext import data as ttd
+from torchtext.legacy.data import Field
 from soynlp.word import WordExtractor
 from soynlp.tokenizer import LTokenizer
 
@@ -48,11 +48,11 @@ def build_vocab(config):
     tokenizer = LTokenizer(scores=cohesion_scores)
 
     # include lengths of the source sentences to use pack pad sequence
-    kor = ttd.Field(tokenize=tokenizer.tokenize,
+    kor = Field(tokenize=tokenizer.tokenize,
                     lower=True,
                     batch_first=True)
 
-    eng = ttd.Field(tokenize='spacy',
+    eng = Field(tokenize='spacy',
                     init_token='<sos>',
                     eos_token='<eos>',
                     lower=True,

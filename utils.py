@@ -10,8 +10,8 @@ import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
 import matplotlib.font_manager as fm
 
-from torchtext import data as ttd
-from torchtext.data import Example, Dataset
+from torchtext.legacy.data import Field, BucketIterator,TabularDataset
+from torchtext.legacy.data import Example, Dataset
 
 
 def load_dataset(mode):
@@ -115,7 +115,7 @@ def make_iter(batch_size, mode, train_data=None, valid_data=None, test_data=None
 
         # make iterator using train and validation dataset
         print(f'Make Iterators for training . . .')
-        train_iter, valid_iter = ttd.BucketIterator.splits(
+        train_iter, valid_iter = BucketIterator.splits(
             (train_data, valid_data),
             # the BucketIterator needs to be told what function it should use to group the data.
             # In our case, we sort dataset using text of example
@@ -135,7 +135,7 @@ def make_iter(batch_size, mode, train_data=None, valid_data=None, test_data=None
 
         # make iterator using test dataset
         print(f'Make Iterators for testing . . .')
-        test_iter, _ = ttd.BucketIterator.splits(
+        test_iter, _ = BucketIterator.splits(
             (test_data, dummy),
             sort_key=lambda sent: len(sent.kor),
             sort_within_batch=True,
