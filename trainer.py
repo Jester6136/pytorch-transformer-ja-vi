@@ -55,8 +55,8 @@ class Trainer:
             for i,batch in tqdm(enumerate(self.train_iter)):
                 # For each batch, first zero the gradients
                 self.optimizer.zero_grad()
-                source = batch.kor
-                target = batch.eng
+                source = batch.source
+                target = batch.target
                 # target sentence consists of <sos> and following tokens (except the <eos> token)
                 output = self.model(source, target[:, :-1])[0]
 
@@ -95,8 +95,8 @@ class Trainer:
         batch_bleu = []
         with torch.no_grad():
             for batch in self.valid_iter:
-                source = batch.kor
-                target = batch.eng
+                source = batch.source
+                target = batch.target
                 target_ = target
                 output = self.model(source, target[:, :-1])[0]
                 output_ = output.squeeze(0).max(dim=-1)[1]
@@ -110,11 +110,11 @@ class Trainer:
                 total_bleu = []
                 for j in range(self.params.batch_size):
                   try:
-                        target_goal_token = [self.eng.vocab.itos[token] for token in target_[j]]
+                        target_goal_token = [self.target.vocab.itos[token] for token in target_[j]]
                         target_goal = target_goal_token[target_goal_token.index('<sos>')+1:target_goal_token.index('<eos>')]
                         target_result = ' '.join(target_goal)
                         target_result = target_result.replace(' <unk>','')
-                        translated_token = [self.eng.vocab.itos[token] for token in output_[j]]
+                        translated_token = [self.target.vocab.itos[token] for token in output_[j]]
                         translation = translated_token[:translated_token.index('<eos>')]
                         translation = ' '.join(translation)
                         bleu = get_bleu(hypotheses=translation.split(), reference=target_result.split())
@@ -134,8 +134,8 @@ class Trainer:
         batch_bleu = []
         with torch.no_grad():
             for batch in self.test_iter:
-                source = batch.kor
-                target = batch.eng
+                source = batch.source
+                target = batch.target
                 target_ = target
                 output = self.model(source, target[:, :-1])[0]
                 output_ = output.squeeze(0).max(dim=-1)[1]
@@ -150,11 +150,11 @@ class Trainer:
 
                 for j in range(self.params.batch_size):
                   try:
-                        target_goal_token = [self.eng.vocab.itos[token] for token in target_[j]]
+                        target_goal_token = [self.target.vocab.itos[token] for token in target_[j]]
                         target_goal = target_goal_token[target_goal_token.index('<sos>')+1:target_goal_token.index('<eos>')]
                         target_result = ' '.join(target_goal)
                         target_result = target_result.replace(' <unk>','')
-                        translated_token = [self.eng.vocab.itos[token] for token in output_[j]]
+                        translated_token = [self.target.vocab.itos[token] for token in output_[j]]
                         translation = translated_token[:translated_token.index('<eos>')]
                         translation = ' '.join(translation)
                         bleu = get_bleu(hypotheses=translation.split(), reference=target_result.split())
