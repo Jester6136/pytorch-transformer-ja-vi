@@ -1,11 +1,11 @@
-import pickle
+import dill as pickle
 import numpy as np
 import torch
 import torch.nn as nn
 
-pickle_eng = open('pickles/eng.pickle', 'rb')
-eng = pickle.load(pickle_eng)
-pad_idx = eng.vocab.stoi['<pad>']
+pickle_target = open('pickles/target.pickle', 'rb')
+target = pickle.load(pickle_target)
+pad_idx = target.vocab.stoi['<pad>']
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 

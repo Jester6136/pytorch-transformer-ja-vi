@@ -78,7 +78,6 @@ class Trainer:
 
             train_loss = epoch_loss / len(self.train_iter)
             valid_loss,val_bleu = self.evaluate()
-
             end_time = time.time()
             epoch_mins, epoch_secs = epoch_time(start_time, end_time)
 
@@ -121,10 +120,16 @@ class Trainer:
                         total_bleu.append(bleu)
                   except:
                     pass
-                total_bleu = sum(total_bleu) / len(total_bleu)
-                batch_bleu.append(total_bleu)
 
-        batch_bleu = sum(batch_bleu) / len(batch_bleu)
+                try:
+                  total_bleu = sum(total_bleu) / len(total_bleu)
+                  batch_bleu.append(total_bleu)
+                except:
+                  pass
+        try:
+          batch_bleu = sum(batch_bleu) / len(batch_bleu)
+        except:
+          batch_bleu = 0
         return epoch_loss / len(self.valid_iter),batch_bleu
 
     def inference(self):
@@ -161,10 +166,15 @@ class Trainer:
                         total_bleu.append(bleu)
                   except:
                     pass
-                total_bleu = sum(total_bleu) / len(total_bleu)
-                batch_bleu.append(total_bleu)
-
-        batch_bleu = sum(batch_bleu) / len(batch_bleu)
+                try:
+                  total_bleu = sum(total_bleu) / len(total_bleu)
+                  batch_bleu.append(total_bleu)
+                except:
+                  pass
+        try:
+          batch_bleu = sum(batch_bleu) / len(batch_bleu)
+        except:
+          batch_bleu = 0
         test_loss = epoch_loss / len(self.test_iter)
         print(f'Test Loss: {test_loss:.3f}')
         print(f'Test Bleu: {batch_bleu:.3f}')

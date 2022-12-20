@@ -1,7 +1,7 @@
 import os
 import re
 import json
-import pickle
+import dill as pickle
 from pathlib import Path
 
 import torch
@@ -57,7 +57,7 @@ def clean_text(text):
     Returns:
         normalized sentence
     """
-    text = re.sub('[-=+,#/\?:^$.@*\"※~&%ㆍ!』\\‘|\(\)\[\]\<\>`…》]', '', text)
+    text = re.sub('[-=+,#/\?:^$.@*\"※~&%ㆍ\\|\(\)\[\]\<\>`…》]', '', text)
     return text
 
 
@@ -73,15 +73,15 @@ def convert_to_dataset(data, source, targer):
         (Dataset) torchtext Dataset containing 'source' and 'targer' Fields
     """
     # drop missing values not containing str value from DataFrame
-    missing_rows = [idx for idx, row in data.iterrows() if type(row.korean) != str or type(row.english) != str]
+    missing_rows = [idx for idx, row in data.iterrows() if type(row.source) != str or type(row.target) != str]
     data = data.drop(missing_rows)
 
     # convert each row of DataFrame to torchtext 'Example' containing 'source' and 'targer' Fields
     list_of_examples = [Example.fromlist(row.apply(lambda x: clean_text(x)).tolist(),
-                                         fields=[('source', source), ('targer', targer)]) for _, row in data.iterrows()]
+                                         fields=[('source', source), ('target', targer)]) for _, row in data.iterrows()]
 
     # construct torchtext 'Dataset' using torchtext 'Example' list
-    dataset = Dataset(examples=list_of_examples, fields=[('source', source), ('targer', targer)])
+    dataset = Dataset(examples=list_of_examples, fields=[('source', source), ('target', targer)])
 
     return dataset
 
@@ -220,16 +220,16 @@ class Params:
         pickle_source = open('pickles/source.pickle', 'rb')
         source = pickle.load(pickle_source)
 
-        pickle_source = open('pickles/source.pickle', 'rb')
-        source = pickle.load(pickle_source)
+        pickle_target = open('pickles/target.pickle', 'rb')
+        target = pickle.load(pickle_target)
 
         # add device information to the the params
         device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
         # add <sos> and <eos> tokens' indices used to predict the target sentence
-        params = {'input_dim': len(source.vocab), 'output_dim': len(source.vocab),
-                  'sos_idx': source.vocab.stoi['<sos>'], 'eos_idx': source.vocab.stoi['<eos>'],
-                  'pad_idx': source.vocab.stoi['<pad>'], 'device': device}
+        params = {'input_dim': len(source.vocab), 'output_dim': len(target.vocab),
+                  'sos_idx': target.vocab.stoi['<sos>'], 'eos_idx': target.vocab.stoi['<eos>'],
+                  'pad_idx': target.vocab.stoi['<pad>'], 'device': device}
 
         self.__dict__.update(params)
 
