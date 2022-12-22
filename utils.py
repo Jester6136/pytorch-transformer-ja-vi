@@ -1,7 +1,7 @@
 import os
 import re
 import json
-import pickle
+import dill as pickle
 from pathlib import Path
 
 import torch
@@ -25,7 +25,7 @@ def load_dataset(mode):
     """
     print(f'Loading AI Hub Kor-Eng translation dataset and converting it to pandas DataFrame . . .')
 
-    data_dir = Path().cwd() / 'data'
+    data_dir = Path().cwd() / 'mine_data'
 
     if mode == 'train':
         train_file = os.path.join(data_dir, 'train.csv')
@@ -57,31 +57,31 @@ def clean_text(text):
     Returns:
         normalized sentence
     """
-    text = re.sub('[-=+,#/\?:^$.@*\"※~&%ㆍ!』\\‘|\(\)\[\]\<\>`…》]', '', text)
+    text = re.sub('[-=+,#/\?:^$.@*\"※~&%ㆍ\\|\(\)\[\]\<\>`…》]', '', text)
     return text
 
 
-def convert_to_dataset(data, kor, eng):
+def convert_to_dataset(data, source, targer):
     """
     Pre-process input DataFrame and convert pandas DataFrame to torchtext Dataset.
     Args:
         data: (DataFrame) pandas DataFrame to be converted into torchtext Dataset
-        kor: torchtext Field containing Korean sentence
-        eng: torchtext Field containing English sentence
+        source: torchtext Field containing Source sentence
+        targer: torchtext Field containing Target sentence
 
     Returns:
-        (Dataset) torchtext Dataset containing 'kor' and 'eng' Fields
+        (Dataset) torchtext Dataset containing 'source' and 'targer' Fields
     """
     # drop missing values not containing str value from DataFrame
-    missing_rows = [idx for idx, row in data.iterrows() if type(row.korean) != str or type(row.english) != str]
+    missing_rows = [idx for idx, row in data.iterrows() if type(row.source) != str or type(row.target) != str]
     data = data.drop(missing_rows)
 
-    # convert each row of DataFrame to torchtext 'Example' containing 'kor' and 'eng' Fields
+    # convert each row of DataFrame to torchtext 'Example' containing 'source' and 'targer' Fields
     list_of_examples = [Example.fromlist(row.apply(lambda x: clean_text(x)).tolist(),
-                                         fields=[('kor', kor), ('eng', eng)]) for _, row in data.iterrows()]
+                                         fields=[('source', source), ('target', targer)]) for _, row in data.iterrows()]
 
     # construct torchtext 'Dataset' using torchtext 'Example' list
-    dataset = Dataset(examples=list_of_examples, fields=[('kor', kor), ('eng', eng)])
+    dataset = Dataset(examples=list_of_examples, fields=[('source', source), ('target', targer)])
 
     return dataset
 
@@ -100,18 +100,18 @@ def make_iter(batch_size, mode, train_data=None, valid_data=None, test_data=None
         (BucketIterator) train, valid, test iterator
     """
     # load text and label field made by build_pickles.py
-    file_kor = open('pickles/kor.pickle', 'rb')
-    kor = pickle.load(file_kor)
+    file_source = open('pickles/source.pickle', 'rb')
+    source = pickle.load(file_source)
 
-    file_eng = open('pickles/eng.pickle', 'rb')
-    eng = pickle.load(file_eng)
+    file_target = open('pickles/target.pickle', 'rb')
+    target = pickle.load(file_target)
 
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
     # convert pandas DataFrame to torchtext dataset
     if mode == 'train':
-        train_data = convert_to_dataset(train_data, kor, eng)
-        valid_data = convert_to_dataset(valid_data, kor, eng)
+        train_data = convert_to_dataset(train_data, source, target)
+        valid_data = convert_to_dataset(valid_data, source, target)
 
         # make iterator using train and validation dataset
         print(f'Make Iterators for training . . .')
@@ -119,7 +119,7 @@ def make_iter(batch_size, mode, train_data=None, valid_data=None, test_data=None
             (train_data, valid_data),
             # the BucketIterator needs to be told what function it should use to group the data.
             # In our case, we sort dataset using text of example
-            sort_key=lambda sent: len(sent.kor),
+            sort_key=lambda sent: len(sent.source),
             # all of the tensors will be sorted by their length by below option
             sort_within_batch=True,
             batch_size=batch_size,
@@ -128,7 +128,7 @@ def make_iter(batch_size, mode, train_data=None, valid_data=None, test_data=None
         return train_iter, valid_iter
 
     else:
-        test_data = convert_to_dataset(test_data, kor, eng)
+        test_data = convert_to_dataset(test_data, source, target)
 
         # defines dummy list will be passed to the BucketIterator
         dummy = list()
@@ -137,7 +137,7 @@ def make_iter(batch_size, mode, train_data=None, valid_data=None, test_data=None
         print(f'Make Iterators for testing . . .')
         test_iter, _ = BucketIterator.splits(
             (test_data, dummy),
-            sort_key=lambda sent: len(sent.kor),
+            sort_key=lambda sent: len(sent.source),
             sort_within_batch=True,
             batch_size=batch_size,
             device=device)
@@ -216,20 +216,20 @@ class Params:
             self.__dict__.update(params)
 
     def load_vocab(self):
-        # load kor and eng vocabs to add vocab size configuration
-        pickle_kor = open('pickles/kor.pickle', 'rb')
-        kor = pickle.load(pickle_kor)
+        # load source and source vocabs to add vocab size configuration
+        pickle_source = open('pickles/source.pickle', 'rb')
+        source = pickle.load(pickle_source)
 
-        pickle_eng = open('pickles/eng.pickle', 'rb')
-        eng = pickle.load(pickle_eng)
+        pickle_target = open('pickles/target.pickle', 'rb')
+        target = pickle.load(pickle_target)
 
         # add device information to the the params
         device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
         # add <sos> and <eos> tokens' indices used to predict the target sentence
-        params = {'input_dim': len(kor.vocab), 'output_dim': len(eng.vocab),
-                  'sos_idx': eng.vocab.stoi['<sos>'], 'eos_idx': eng.vocab.stoi['<eos>'],
-                  'pad_idx': eng.vocab.stoi['<pad>'], 'device': device}
+        params = {'input_dim': len(source.vocab), 'output_dim': len(target.vocab),
+                  'sos_idx': target.vocab.stoi['<sos>'], 'eos_idx': target.vocab.stoi['<eos>'],
+                  'pad_idx': target.vocab.stoi['<pad>'], 'device': device}
 
         self.__dict__.update(params)
 
