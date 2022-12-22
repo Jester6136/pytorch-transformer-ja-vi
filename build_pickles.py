@@ -7,8 +7,9 @@ from pathlib import Path
 from utils import convert_to_dataset
 
 from torchtext.legacy.data import Field
-from tokenize import Tokenizer
+from tokenizer import Tokenizer
 tokenizer =  Tokenizer()
+
 def build_vocab(config):
     """
     Build vocab used to convert input sentence into word indices using soynlp and spacy tokenizer
@@ -21,7 +22,7 @@ def build_vocab(config):
                     lower=True,
                     batch_first=True)
 
-    eng = Field(tokenize='spacy',
+    eng = Field(tokenize=tokenizer.spacy_en,
                     init_token='<sos>',
                     eos_token='<eos>',
                     lower=True,
@@ -61,5 +62,4 @@ if __name__ == '__main__':
 
     config = parser.parse_args()
 
-    build_tokenizer()
     build_vocab(config)
